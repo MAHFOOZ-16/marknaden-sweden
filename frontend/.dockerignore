@@ -1,0 +1,24 @@
+# Local development environment files — MUST NOT leak into production builds
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production.local
+
+# Dependencies (installed fresh in Docker)
+node_modules
+
+# Build output
+.next
+
+# IDE / OS
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Git
+.git
+.gitignore

@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL ─────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: marketplace-db
+    environment:
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: marketplace
+      POSTGRES_DB: marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U marketplace" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: marketplace-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend (FastAPI) ──────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: marketplace-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://marketplace:marketplace@postgres:5432/marketplace
+      DATABASE_URL_SYNC: postgresql://marketplace:marketplace@postgres:5432/marketplace
+      REDIS_URL: redis://redis:6379/0
+      AUTH_MOCK_ENABLED: "true"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001"
+      DEBUG: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
